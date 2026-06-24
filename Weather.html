@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather App</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #4facfe, #00f2fe);
+      padding: 20px;
+    }
+    .weather-card {
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      border-radius: 30px;
+      padding: 35px 30px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+      color: white;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.3);
+      transition: transform 0.3s ease;
+    }
+    .weather-card:hover {
+      transform: scale(1.02);
+    }
+    .location {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .location i {
+      font-size: 24px;
+    }
+    .coordinates {
+      font-size: 14px;
+      opacity: 0.85;
+      margin-bottom: 5px;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.5px;
+      background: rgba(255,255,255,0.1);
+      padding: 4px 12px;
+      border-radius: 20px;
+      display: inline-block;
+    }
+    .date-time {
+      font-size: 14px;
+      opacity: 0.9;
+      margin-bottom: 20px;
+    }
+    .weather-icon {
+      font-size: 80px;
+      margin: 10px 0;
+      text-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    .temperature {
+      font-size: 64px;
+      font-weight: 700;
+      line-height: 1;
+      margin: 10px 0;
+    }
+    .temperature sup {
+      font-size: 28px;
+      top: -20px;
+    }
+    .weather-description {
+      font-size: 22px;
+      font-weight: 500;
+      text-transform: capitalize;
+      margin-bottom: 20px;
+      letter-spacing: 0.5px;
+    }
+    .weather-details {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+    }
+    .detail-item {
+      background: rgba(255,255,255,0.15);
+      border-radius: 16px;
+      padding: 12px 8px;
+      backdrop-filter: blur(5px);
+    }
+    .detail-item .label {
+      font-size: 12px;
+      opacity: 0.8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .detail-item .value {
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .update-info {
+      margin-top: 20px;
+      font-size: 12px;
+      opacity: 0.7;
+    }
+    .loading {
+      display: none;
+      font-size: 18px;
+      padding: 30px 0;
+    }
+    .error {
+      display: none;
+      color: #ffdddd;
+      background: rgba(255,0,0,0.3);
+      padding: 12px;
+      border-radius: 12px;
+      margin: 15px 0;
+    }
+    .refresh-btn {
+      margin-top: 18px;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 10px 25px;
+      border-radius: 50px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+      backdrop-filter: blur(5px);
+    }
+    .refresh-btn:hover {
+      background: rgba(255,255,255,0.35);
+      transform: translateY(-2px);
+    }
+    .refresh-btn:active {
+      transform: scale(0.95);
+    }
+  </style>
+</head>
+<body>
+
+<div class="weather-card" id="weatherCard">
+  <div class="location">
+    <span id="locationName">Pune, IN</span>
+  </div>
+  <div class="coordinates" id="coordinates">📍 18.52°N, 73.85°E</div>
+  <div class="date-time" id="dateTime">--</div>
+
+  <div class="weather-icon" id="weatherIcon">☀️</div>
+  <div class="temperature" id="temperature">--<sup>°C</sup></div>
+  <div class="weather-description" id="weatherDesc">Loading...</div>
+
+  <div class="weather-details">
+    <div class="detail-item">
+      <div class="label">💧 Humidity</div>
+      <div class="value" id="humidity">--%</div>
+    </div>
+    <div class="detail-item">
+      <div class="label">💨 Wind</div>
+      <div class="value" id="windSpeed">-- km/h</div>
+    </div>
+    <div class="detail-item">
+      <div class="label">🌡️ Feels Like</div>
+      <div class="value" id="feelsLike">--°C</div>
+    </div>
+  </div>
+
+  <div class="error" id="errorMessage">⚠️ Failed to load weather data.</div>
+  <div class="loading" id="loadingIndicator">⏳ Loading weather...</div>
+
+  <button class="refresh-btn" id="refreshBtn">🔄 Refresh</button>
+  <div class="update-info" id="updateTime">Last updated: --</div>
+</div>
+
+<script>
+  (function() {
+    // Configuration - you can change these values
+    const LATITUDE = 18.52;
+    const LONGITUDE = 73.85;
+    const locationName = 'Pune, IN';
+    
+    const API_URL = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current_weather=true&hourly=relative_humidity_2m&timezone=auto`;
+
+    const locationEl = document.getElementById('locationName');
+    const coordinatesEl = document.getElementById('coordinates');
+    const dateTimeEl = document.getElementById('dateTime');
+    const weatherIconEl = document.getElementById('weatherIcon');
+    const temperatureEl = document.getElementById('temperature');
+    const weatherDescEl = document.getElementById('weatherDesc');
+    const humidityEl = document.getElementById('humidity');
+    const windSpeedEl = document.getElementById('windSpeed');
+    const feelsLikeEl = document.getElementById('feelsLike');
+    const errorEl = document.getElementById('errorMessage');
+    const loadingEl = document.getElementById('loadingIndicator');
+    const updateTimeEl = document.getElementById('updateTime');
+    const refreshBtn = document.getElementById('refreshBtn');
+
+    const weatherCodes = {
+      0: { icon: '☀️', description: 'Clear sky' },
+      1: { icon: '🌤️', description: 'Mainly clear' },
+      2: { icon: '⛅', description: 'Partly cloudy' },
+      3: { icon: '☁️', description: 'Overcast' },
+      45: { icon: '🌫️', description: 'Fog' },
+      48: { icon: '🌫️', description: 'Depositing rime fog' },
+      51: { icon: '🌦️', description: 'Drizzle: Light' },
+      53: { icon: '🌦️', description: 'Drizzle: Moderate' },
+      55: { icon: '🌧️', description: 'Drizzle: Dense' },
+      56: { icon: '🌧️', description: 'Freezing Drizzle: Light' },
+      57: { icon: '🌧️', description: 'Freezing Drizzle: Dense' },
+      61: { icon: '🌧️', description: 'Rain: Slight' },
+      63: { icon: '🌧️', description: 'Rain: Moderate' },
+      65: { icon: '🌧️', description: 'Rain: Heavy' },
+      66: { icon: '🌧️', description: 'Freezing Rain: Light' },
+      67: { icon: '🌧️', description: 'Freezing Rain: Heavy' },
+      71: { icon: '🌨️', description: 'Snow fall: Slight' },
+      73: { icon: '🌨️', description: 'Snow fall: Moderate' },
+      75: { icon: '🌨️', description: 'Snow fall: Heavy' },
+      77: { icon: '🌨️', description: 'Snow grains' },
+      80: { icon: '🌧️', description: 'Rain showers: Slight' },
+      81: { icon: '🌧️', description: 'Rain showers: Moderate' },
+      82: { icon: '🌧️', description: 'Rain showers: Heavy' },
+      85: { icon: '🌨️', description: 'Snow showers: Slight' },
+      86: { icon: '🌨️', description: 'Snow showers: Heavy' },
+      95: { icon: '⛈️', description: 'Thunderstorm: Slight' },
+      96: { icon: '⛈️', description: 'Thunderstorm: Moderate' },
+      99: { icon: '⛈️', description: 'Thunderstorm: Heavy' }
+    };
+
+    function getWeatherInfo(code) {
+      return weatherCodes[code] || { icon: '🌡️', description: 'Unknown' };
+    }
+
+    function formatTime(date) {
+      return date.toLocaleString('en-IN', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    async function fetchWeather() {
+      loadingEl.style.display = 'block';
+      errorEl.style.display = 'none';
+      refreshBtn.disabled = true;
+
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+
+        const current = data.current_weather;
+        if (!current) {
+          throw new Error('No current weather data available');
+        }
+
+        let humidity = '--';
+        if (data.hourly && data.hourly.relative_humidity_2m && data.hourly.relative_humidity_2m.length > 0) {
+          humidity = data.hourly.relative_humidity_2m[0] + '%';
+        }
+
+        updateUI(current, humidity);
+        updateTimeEl.textContent = `Last updated: ${formatTime(new Date())}`;
+        errorEl.style.display = 'none';
+
+      } catch (error) {
+        console.error('Weather fetch error:', error);
+        errorEl.textContent = `⚠️ ${error.message || 'Failed to load weather data.'}`;
+        errorEl.style.display = 'block';
+      } finally {
+        loadingEl.style.display = 'none';
+        refreshBtn.disabled = false;
+      }
+    }
+
+    function updateUI(current, humidity) {
+      const { temperature, windspeed, weathercode } = current;
+
+      temperatureEl.innerHTML = `${Math.round(temperature)}<sup>°C</sup>`;
+
+      windSpeedEl.textContent = `${Math.round(windspeed)} km/h`;
+
+      humidityEl.textContent = humidity;
+
+      const weatherInfo = getWeatherInfo(weathercode);
+      weatherIconEl.textContent = weatherInfo.icon;
+      weatherDescEl.textContent = weatherInfo.description;
+
+      let feelsLike = temperature;
+      if (windspeed > 5) {
+        feelsLike = temperature - (windspeed * 0.15);
+      }
+      feelsLikeEl.textContent = `${Math.round(feelsLike)}°C`;
+
+      locationEl.textContent = locationName;
+      
+      const latDir = LATITUDE >= 0 ? 'N' : 'S';
+      const lonDir = LONGITUDE >= 0 ? 'E' : 'W';
+      coordinatesEl.textContent = `📍 ${Math.abs(LATITUDE).toFixed(2)}°${latDir}, ${Math.abs(LONGITUDE).toFixed(2)}°${lonDir}`;
+
+      dateTimeEl.textContent = formatTime(new Date());
+
+      updateBackground(weathercode);
+    }
+
+    function updateBackground(weathercode) {
+      const card = document.querySelector('.weather-card');
+      let gradient = 'linear-gradient(135deg, #4facfe, #00f2fe)'; 
+
+      if (weathercode >= 0 && weathercode <= 3) {
+        if (weathercode === 0) gradient = 'linear-gradient(135deg, #f093fb, #f5576c)';
+        else gradient = 'linear-gradient(135deg, #4facfe, #00f2fe)';
+      } else if (weathercode >= 45 && weathercode <= 48) {
+        gradient = 'linear-gradient(135deg, #b8cbb8, #b6d0d0)';
+      } else if (weathercode >= 51 && weathercode <= 67) {
+        gradient = 'linear-gradient(135deg, #4a5a6a, #2d3b4a)';
+      } else if (weathercode >= 71 && weathercode <= 77) {
+        gradient = 'linear-gradient(135deg, #e6e9f0, #d0d5df)';
+      } else if (weathercode >= 80 && weathercode <= 82) {
+        gradient = 'linear-gradient(135deg, #2b3a4a, #1a2630)';
+      } else if (weathercode >= 85 && weathercode <= 86) {
+        gradient = 'linear-gradient(135deg, #d4d9e0, #a8b2c0)';
+      } else if (weathercode >= 95 && weathercode <= 99) {
+        gradient = 'linear-gradient(135deg, #1a1a2e, #16213e)';
+      }
+      card.style.background = gradient;
+    }
+
+    fetchWeather();
+    refreshBtn.addEventListener('click', fetchWeather);
+
+    setInterval(fetchWeather, 300000);
+  })();
+</script>
+</body>
+</html>
